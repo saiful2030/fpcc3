@@ -1,6 +1,6 @@
 Flask==2.2.5
 Flask-Mail==0.9.1
-mysql-connector-python==8.0.34
+mysql-connector-python>=8.0.30,<9.0.0
 google-auth==2.23.0
 google-auth-oauthlib==1.0.0
 google-api-python-client==2.93.0
