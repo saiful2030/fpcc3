@@ -46,10 +46,11 @@ app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
 
 db_config = {
     'host': 'takehome.mysql.database.azure.com',
-    'user': 'bismillahtakehome',
+    'user': 'takehome',
     'password': 'W6ALd+AV[_ogEu9',
-    'database': 'bismillahtakehome',
+    'database': 'ecommerce',
     'port': 3306,
+
 }
 
 db = connector.connect(**db_config)
