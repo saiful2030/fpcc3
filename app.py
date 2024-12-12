@@ -11,7 +11,6 @@ from google_auth_oauthlib.flow import Flow
 import google.auth.transport.requests
 from functools import wraps
 from werkzeug.utils import secure_filename
-import uuid
 from datetime import datetime
 import locale
 import time
@@ -820,8 +819,10 @@ def decimal_to_float(decimal_value):
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
+    conn = None
+    cursor = None
     try:
-        # Ensure user_id in session
+        # Pastikan ada user_id dalam session
         user_id = session.get('user_id')
         if not user_id:
             return "User tidak ditemukan", 400
@@ -829,7 +830,7 @@ def checkout():
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(dictionary=True)
 
-        # Fetch user data
+        # Ambil data pengguna dari database berdasarkan user_id
         cursor.execute("""
             SELECT id, username, email, alamat, nomer_hp, profile_pic
             FROM users
@@ -840,7 +841,7 @@ def checkout():
         if not user_data:
             return "Data pengguna tidak ditemukan", 400
 
-        # Get cart total price
+        # Ambil total harga dari keranjang belanja
         cursor.execute("""
             SELECT SUM(c.jumlah_barang * d.harga) AS total_harga
             FROM cart c
@@ -850,58 +851,63 @@ def checkout():
         total_harga = cursor.fetchone()['total_harga'] or 0
         total_harga = float(total_harga)
 
-        # Process checkout on POST request
+        # Jika method POST, proses checkout
         if request.method == 'POST':
-            # Validate email format
+            # Ambil data dari form
+            nama_lengkap = request.form['nama_lengkap']
             email = request.form['email'].strip()
+            alamat = request.form['alamat']
+            kota = request.form['kota']
+            kode_pos = request.form['kode_pos']
+            no_telepon = request.form['no_telepon']
+
+            # Validasi email
             if not re.match(r"[^@]+@[^@]+\.[a-zA-Z]{2,}", email):
                 return "Format email tidak valid", 400
 
-            # Insert order data
+            # Simpan data checkout ke tabel orders
             cursor.execute("""
                 INSERT INTO orders (user_id, nama_lengkap, alamat, kota, kode_pos, no_telepon, total_harga)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (user_id, request.form['nama_lengkap'], request.form['alamat'],
-                  request.form['kota'], request.form['kode_pos'], request.form['no_telepon'], total_harga))
+            """, (user_id, nama_lengkap, alamat, kota, kode_pos, no_telepon, total_harga))
             conn.commit()
 
-            # Generate unique order_id
-            timestamp = str(int(time.time()))
-            short_uuid = str(uuid.uuid4().hex)[:10]
-            unique_order_id = f"order-{user_id}-{timestamp}-{short_uuid}"
+            # Gunakan timestamp untuk membuat order_id yang unik
+            timestamp = str(int(time.time()))  # Gunakan timestamp saat ini
+            unique_order_id = f"order-{user_id}-{timestamp}"  # Kombinasikan dengan user_id dan timestamp
 
-            # Send payment request for QRIS
+            # Param untuk transaksi dengan payment_type QRIS
             param = {
                 "transaction_details": {
                     "order_id": unique_order_id,
                     "gross_amount": total_harga
                 },
-                "payment_type": "qris",
+                "payment_type": "qris",  # Tentukan metode pembayaran QRIS
                 "customer_details": {
-                    "first_name": request.form['nama_lengkap'],
+                    "first_name": nama_lengkap,
                     "last_name": "",
                     "email": email,
-                    "phone": request.form['no_telepon']
+                    "phone": no_telepon
                 }
             }
 
+            # Kirim request untuk membuat transaksi
             transaction = snap.create_transaction(param)
-            return render_template('user/payment.html', transaction_token=transaction['token'])
+            transaction_token = transaction['token']
 
+            return render_template('user/payment.html', transaction_token=transaction_token)
+
+        # Render halaman checkout
         return render_template('user/checkout.html', user_data=user_data, total_harga=total_harga)
 
-    except mysql.connector.Error as db_error:
-        print(f"Database Error: {db_error}")
-        return "Terjadi kesalahan pada database", 500
     except Exception as e:
-        print(f"Unexpected Error: {e}")
+        print(f"Error: {e}")
         return f"Terjadi kesalahan: {e}", 500
     finally:
         if cursor:
             cursor.close()
         if conn:
             conn.close()
-
 @app.route('/order_success')
 def order_success():
     return render_template('user/order_success.html')
@@ -1243,8 +1249,9 @@ def tambah_user_admin():
 
         if file and allowed_file(file.filename):
             original_filename = secure_filename(file.filename)
-            # Tambahkan UUID untuk membuat nama file unik
-            unique_filename = f"{uuid.uuid4().hex}_{original_filename}"
+            # Tambahkan timestamp untuk membuat nama file unik
+            timestamp = str(int(time.time()))  # Gunakan timestamp saat ini
+            unique_filename = f"{timestamp}_{original_filename}"  # Gabungkan timestamp dengan nama file asli
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
             file.save(filepath)
         else:
@@ -1272,7 +1279,6 @@ def tambah_user_admin():
         return redirect(url_for('dashboard_user'))
 
     return render_template('admin/user.html')
-
 
 @app.route('/hapus_user_admin/<int:user_id>', methods=['GET'])
 @login_is_required
