@@ -10,6 +10,5 @@ pandas
 fpdf
 flask-socketio
 requests
-secrets
 bcrypt
 uuid
