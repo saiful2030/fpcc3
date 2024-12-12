@@ -11,4 +11,3 @@ fpdf==1.7.2
 flask-socketio==5.3.4
 requests==2.31.0
 bcrypt==4.0.1
-uuid==1.30
