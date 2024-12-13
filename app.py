@@ -1336,7 +1336,9 @@ def edit_user_admin(user_id):
                 if os.path.exists(old_pic_path):
                     os.remove(old_pic_path)
 
-            filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
+            # Generate a new filename using a timestamp
+            timestamp = int(time.time())
+            filename = f"{timestamp}_{secure_filename(file.filename)}"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
@@ -1359,6 +1361,7 @@ def edit_user_admin(user_id):
 
     # Render the edit form with current user data
     return render_template('admin/edit_user.html', user=user)
+
 
 @app.route('/export/csv')
 @login_is_required
@@ -1971,5 +1974,4 @@ def logout():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
-
 
