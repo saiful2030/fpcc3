@@ -24,6 +24,7 @@ from fpdf import FPDF
 import io
 from flask_socketio import join_room, leave_room, send, SocketIO
 from string import ascii_uppercase
+from ftplib import FTP
 
 # Flask app setup
 app = Flask(__name__)
@@ -91,8 +92,14 @@ def login_is_required(function):
     return wrapper
 
 
-UPLOAD_FOLDER = 'static/profile_pics'  # Folder tempat menyimpan foto
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Ekstensi file yang diperbolehkan
+# Konfigurasi FTP
+FTP_HOST = '202.10.36.201'
+FTP_USER = 'pic'
+FTP_PASS = '7SsNNN4Hx4wCxDF8'
+FTP_DIR = '/www/wwwroot/pic'
+
+# Ekstensi yang diperbolehkan
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
