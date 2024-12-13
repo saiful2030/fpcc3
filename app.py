@@ -24,20 +24,17 @@ from fpdf import FPDF
 import io
 from flask_socketio import join_room, leave_room, send, SocketIO
 from string import ascii_uppercase
-from ftplib import FTP
+import base64
 
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = 'TakeHome'
 socketio = SocketIO(app)
 
-import locale
-
 try:
-    locale.setlocale(locale.LC_ALL, 'en_CA.UTF-8')
+    locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
 except locale.Error:
-    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-
+    locale.setlocale(locale.LC_ALL, '')
 
 @app.template_filter('format_rupiah')
 def format_rupiah(value):
@@ -46,7 +43,12 @@ def format_rupiah(value):
     except (ValueError, TypeError):
         return value
 
-# Token GitHub Anda
+
+# Konfigurasi folder upload lokal
+app.config['UPLOAD_FOLDER'] = 'static/uploads/profile_pics'
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Konfigurasi GitHub
 GITHUB_TOKEN = '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'
 REPO_OWNER = 'saiful2030'
 REPO_NAME = 'fpcc3'
@@ -54,31 +56,23 @@ FILE_PATH = 'static/uploads/profile_pics'
 
 # Fungsi untuk meng-upload file ke GitHub
 def upload_to_github(file_path, file_name):
-    # Endpoint GitHub API untuk meng-upload file
     url = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE_PATH}/{file_name}'
 
-    # Membaca file yang akan di-upload
     with open(file_path, 'rb') as file:
         content = file.read()
-        encoded_content = base64.b64encode(content).decode('utf-8')  # Mengubah file menjadi base64
+        encoded_content = base64.b64encode(content).decode('utf-8')
 
-    # Data yang akan dikirimkan ke API GitHub
     data = {
         'message': f'Upload {file_name}',
         'content': encoded_content,
     }
 
-    # Header dengan autentikasi
     headers = {
         'Authorization': f'token {GITHUB_TOKEN}',
     }
 
-    # Mengirimkan permintaan PUT ke API GitHub untuk meng-upload file
     response = requests.put(url, json=data, headers=headers)
-
     return response
-
-
 
 db_config = {
     'host': '202.10.36.201',
@@ -123,6 +117,9 @@ def login_is_required(function):
     return wrapper
 
 
+UPLOAD_FOLDER = 'static/profile_pics'  # Folder tempat menyimpan foto
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Ekstensi file yang diperbolehkan
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
 
@@ -130,6 +127,9 @@ def allowed_file(filename):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+UPLOAD_FOLDER = 'static/uploads/profile_pics'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 @app.template_filter('rupiah')
 def rupiah(value):
@@ -1160,7 +1160,7 @@ def edit_barang(product_id):
 @app.route('/hapus_barang/<int:barang_id>', methods=['POST'])
 @login_is_required
 def hapus_barang(barang_id):
-    cursor.execute("DELETE FROM barang WHERE id = %s", (barang_id,))
+    cursor.execute("DELETE FROM dashboard WHERE product_id = %s", (barang_id,))
     db.commit()
     flash("Barang berhasil dihapus!", "success")
     return redirect(url_for('dashboard_barang'))
@@ -1265,7 +1265,7 @@ def tambah_user_admin():
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
-        alamat = request.form['alamat']
+        alamat = request.form['alamat'] 
         nomer = request.form['nomer']
         password = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
         role = "Penjual"
@@ -1314,33 +1314,43 @@ def tambah_user_admin():
 
     return render_template('admin/user.html')
 
-@app.route('/hapus_user_admin/<int:user_id>', methods=['GET'])
+@app.route('/hapus_user_admin/<int:user_id>', methods=['POST'])
 @login_is_required
 def hapus_user_admin(user_id):
-    # Cari pengguna berdasarkan user_id
-    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-    user = cursor.fetchone()
+    try:
+        # Ambil data user dari database
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
 
-    if not user:
-        flash('User not found!', 'danger')
-        return redirect(url_for('dashboard_user'))
+        if not user:
+            flash('User not found!', 'danger')
+            return redirect(url_for('dashboard_user'))
 
-    # Hapus data yang berelasi
-    cursor.execute("DELETE FROM otp_verifications WHERE user_id = %s", (user_id,))
+        # Hapus data OTP terkait
+        cursor.execute("DELETE FROM otp_verifications WHERE user_id = %s", (user_id,))
 
-    # Hapus gambar profil dari server jika ada
-    if user['profile_pic']:
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], user['profile_pic']))
-        except FileNotFoundError:
-            pass  # Gambar tidak ditemukan
+        # Hapus file profile_pic jika ada
+        if user['profile_pic']:
+            profile_pic_path = os.path.join(app.config['UPLOAD_FOLDER'], user['profile_pic'])
+            if os.path.exists(profile_pic_path):
+                os.remove(profile_pic_path)
 
-    # Hapus data pengguna dari database
-    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
-    db.commit()
+        # Hapus data user
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        db.commit()
 
-    flash('User deleted successfully!', 'success')
+        flash("User deleted successfully!", "success")
+
+    except Exception as e:
+        db.rollback()  # Rollback jika terjadi kesalahan
+        flash(f"Error deleting user: {e}", "danger")
+
     return redirect(url_for('dashboard_user'))
+
+
+
+
 
 @app.route('/edit_user_admin/<int:user_id>', methods=['GET', 'POST'])
 @login_is_required
@@ -2007,4 +2017,3 @@ def logout():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
-
