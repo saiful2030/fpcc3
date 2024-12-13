@@ -92,6 +92,9 @@ def login_is_required(function):
 UPLOAD_FOLDER = 'static/profile_pics'  # Folder tempat menyimpan foto
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Ekstensi file yang diperbolehkan
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
+
 # Fungsi untuk memeriksa ekstensi file yang valid
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
