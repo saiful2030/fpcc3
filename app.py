@@ -49,7 +49,7 @@ db_config = {
     'host': 'takehome.mysql.database.azure.com',
     'user': 'bismillahtakehome',
     'password': 'W6ALd+AV[_ogEu9',
-    'database': 'ecommerce',
+    'database': 'ecommerce2',
     'port': 3306,
 
 }
