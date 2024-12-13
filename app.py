@@ -30,10 +30,13 @@ app = Flask(__name__)
 app.secret_key = 'TakeHome'
 socketio = SocketIO(app)
 
+import locale
+
 try:
-    locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
+    locale.setlocale(locale.LC_ALL, 'en_CA.UTF-8')
 except locale.Error:
-    locale.setlocale(locale.LC_ALL, '')
+    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+
 
 @app.template_filter('format_rupiah')
 def format_rupiah(value):
