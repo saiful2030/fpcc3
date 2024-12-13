@@ -46,14 +46,13 @@ def format_rupiah(value):
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
 
 db_config = {
-    'host': 'bismillahtakehome.mysql.database.azure.com',
+    'host': 'takehome.mysql.database.azure.com',
     'user': 'bismillahtakehome',
     'password': 'W6ALd+AV[_ogEu9',
     'database': 'ecommerce',
     'port': 3306,
 
 }
-
 
 db = connector.connect(**db_config)
 cursor = db.cursor(dictionary=True)
