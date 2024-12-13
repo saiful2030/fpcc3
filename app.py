@@ -46,8 +46,39 @@ def format_rupiah(value):
     except (ValueError, TypeError):
         return value
 
+# Token GitHub Anda
+GITHUB_TOKEN = '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'
+REPO_OWNER = 'saiful2030'
+REPO_NAME = 'fpcc3'
+FILE_PATH = 'static/uploads/profile_pics'
 
-app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+# Fungsi untuk meng-upload file ke GitHub
+def upload_to_github(file_path, file_name):
+    # Endpoint GitHub API untuk meng-upload file
+    url = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE_PATH}/{file_name}'
+
+    # Membaca file yang akan di-upload
+    with open(file_path, 'rb') as file:
+        content = file.read()
+        encoded_content = base64.b64encode(content).decode('utf-8')  # Mengubah file menjadi base64
+
+    # Data yang akan dikirimkan ke API GitHub
+    data = {
+        'message': f'Upload {file_name}',
+        'content': encoded_content,
+    }
+
+    # Header dengan autentikasi
+    headers = {
+        'Authorization': f'token {GITHUB_TOKEN}',
+    }
+
+    # Mengirimkan permintaan PUT ke API GitHub untuk meng-upload file
+    response = requests.put(url, json=data, headers=headers)
+
+    return response
+
+
 
 db_config = {
     'host': '202.10.36.201',
@@ -92,9 +123,6 @@ def login_is_required(function):
     return wrapper
 
 
-UPLOAD_FOLDER = 'static/profile_pics'  # Folder tempat menyimpan foto
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Ekstensi file yang diperbolehkan
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
 
@@ -102,9 +130,6 @@ def allowed_file(filename):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-UPLOAD_FOLDER = 'static/uploads/profile_pics'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
 
 @app.template_filter('rupiah')
 def rupiah(value):
