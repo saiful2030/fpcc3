@@ -92,14 +92,8 @@ def login_is_required(function):
     return wrapper
 
 
-# Konfigurasi FTP
-FTP_HOST = '202.10.36.201'
-FTP_USER = 'pic'
-FTP_PASS = '7SsNNN4Hx4wCxDF8'
-FTP_DIR = '/www/wwwroot/pic'
-
-# Ekstensi yang diperbolehkan
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+UPLOAD_FOLDER = 'static/profile_pics'  # Folder tempat menyimpan foto
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Ekstensi file yang diperbolehkan
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
