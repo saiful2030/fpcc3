@@ -83,6 +83,7 @@ db_config = {
 
 }
 
+
 db = connector.connect(**db_config)
 cursor = db.cursor(dictionary=True)
 
@@ -167,6 +168,7 @@ def format_date(value, format='%Y-%m-%d %H:%M:%S'):
     return value
 
 @app.route('/')
+
 def index():
     cursor = db.cursor()
     # Ambil kategori yang dipilih dari parameter GET
@@ -459,73 +461,73 @@ def dashboard_buyer():
         total_harga=total_harga  # Kirimkan total_harga ke template
     )
     
-@app.route('/lengkapi_data/', methods=['GET', 'POST'])
-@app.route('/lengkapi_data/<int:user_id>/', methods=['GET', 'POST'])
-@login_is_required
-def lengkapi_data(user_id=None):
-    cursor = db.cursor()
+# @app.route('/lengkapi_data/', methods=['GET', 'POST'])
+# @app.route('/lengkapi_data/<int:user_id>/', methods=['GET', 'POST'])
+# @login_is_required
+# def lengkapi_data(user_id=None):
+#     cursor = db.cursor()
 
-    # Jika tidak ada user_id yang diberikan dalam URL, ambil user_id dari session
-    if user_id is None:
-        user_id = session.get('user_id')
+#     # Jika tidak ada user_id yang diberikan dalam URL, ambil user_id dari session
+#     if user_id is None:
+#         user_id = session.get('user_id')
 
-    # Verifikasi jika user_id dalam session cocok dengan user_id dalam URL
-    if session.get('user_id') != user_id:
-        flash('Akses ditolak, Anda tidak diizinkan untuk mengedit data pengguna lain!', 'danger')
-        return redirect(url_for('dashboard_buyer'))  # Redirect ke halaman dashboard atau halaman yang sesuai
+#     # Verifikasi jika user_id dalam session cocok dengan user_id dalam URL
+#     if session.get('user_id') != user_id:
+#         flash('Akses ditolak, Anda tidak diizinkan untuk mengedit data pengguna lain!', 'danger')
+#         return redirect(url_for('dashboard_buyer'))  # Redirect ke halaman dashboard atau halaman yang sesuai
 
-    # Cek apakah ada user_id yang valid
-    if not user_id:
-        flash('User ID tidak ditemukan!', 'danger')
-        return redirect(url_for('login'))  # Redirect ke halaman login jika tidak ada user_id
+#     # Cek apakah ada user_id yang valid
+#     if not user_id:
+#         flash('User ID tidak ditemukan!', 'danger')
+#         return redirect(url_for('login'))  # Redirect ke halaman login jika tidak ada user_id
 
-    if request.method == 'POST':
-        alamat = request.form.get('alamat')
-        nomer_hp = request.form.get('nomer_hp')
-        profile_pic = request.files.get('profile_pic')
+#     if request.method == 'POST':
+#         alamat = request.form.get('alamat')
+#         nomer_hp = request.form.get('nomer_hp')
+#         profile_pic = request.files.get('profile_pic')
 
-        # Validasi data
-        if not alamat or not nomer_hp:
-            flash('Alamat dan nomor HP tidak boleh kosong!', 'danger')
-            return redirect(url_for('lengkapi_data', user_id=user_id))
+#         # Validasi data
+#         if not alamat or not nomer_hp:
+#             flash('Alamat dan nomor HP tidak boleh kosong!', 'danger')
+#             return redirect(url_for('lengkapi_data', user_id=user_id))
 
-        # Handle upload profile picture
-        profile_pic_filename = None
-        if profile_pic and profile_pic.filename != '':
-            profile_pic_filename = f"user_{user_id}_{profile_pic.filename}"
-            upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'profile_pics', profile_pic_filename)
-            profile_pic.save(upload_path)
-        else:
-            # Jika tidak ada file gambar, pakai gambar default
-            profile_pic_filename = 'profile_pics/default.jpg'
+#         # Handle upload profile picture
+#         profile_pic_filename = None
+#         if profile_pic and profile_pic.filename != '':
+#             profile_pic_filename = f"user_{user_id}_{profile_pic.filename}"
+#             upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'profile_pics', profile_pic_filename)
+#             profile_pic.save(upload_path)
+#         else:
+#             # Jika tidak ada file gambar, pakai gambar default
+#             profile_pic_filename = 'profile_pics/default.jpg'
 
-        # Update data ke database
-        query = '''
-            UPDATE users 
-            SET alamat = %s, nomer_hp = %s, profile_pic = %s 
-            WHERE id = %s
-        '''
-        cursor.execute(query, (alamat, nomer_hp, profile_pic_filename, user_id))
-        db.commit()
-        cursor.close()
+#         # Update data ke database
+#         query = '''
+#             UPDATE users 
+#             SET alamat = %s, nomer_hp = %s, profile_pic = %s 
+#             WHERE id = %s
+#         '''
+#         cursor.execute(query, (alamat, nomer_hp, profile_pic_filename, user_id))
+#         db.commit()
+#         cursor.close()
 
-        flash('Data berhasil diperbarui!', 'success')
-        return redirect(url_for('dashboard_buyer'))
+#         flash('Data berhasil diperbarui!', 'success')
+#         return redirect(url_for('dashboard_buyer'))
 
-    # Ambil data pengguna untuk ditampilkan di form
-    cursor.execute("SELECT alamat, nomer_hp, profile_pic FROM users WHERE id = %s", (user_id,))
-    user = cursor.fetchone()
-    cursor.close()
+#     # Ambil data pengguna untuk ditampilkan di form
+#     cursor.execute("SELECT alamat, nomer_hp, profile_pic FROM users WHERE id = %s", (user_id,))
+#     user = cursor.fetchone()
+#     cursor.close()
 
-    # Data default jika belum diisi
-    user_data = {
-        'user_id': user_id,  # Menambahkan user_id ke dalam dictionary
-        'alamat': user[0] if user[0] else '',
-        'nomer_hp': user[1] if user[1] else '',
-        'profile_pic': user[2] if user[2] else 'profile_pics/default.jpg'  # Memastikan bahwa jika profile_pic kosong, menggunakan gambar default
-    }
+#     # Data default jika belum diisi
+#     user_data = {
+#         'user_id': user_id,  # Menambahkan user_id ke dalam dictionary
+#         'alamat': user[0] if user[0] else '',
+#         'nomer_hp': user[1] if user[1] else '',
+#         'profile_pic': user[2] if user[2] else 'profile_pics/default.jpg'  # Memastikan bahwa jika profile_pic kosong, menggunakan gambar default
+#     }
 
-    return render_template('user/lengkapi_data.html', user_data=user_data)
+#     return render_template('user/lengkapi_data.html', user_data=user_data)
 
 
 @app.route('/setting_user/<int:user_id>/', methods=['GET', 'POST'])
@@ -942,6 +944,7 @@ def checkout():
             cursor.close()
         if conn:
             conn.close()
+            
 @app.route('/order_success')
 def order_success():
     return render_template('user/order_success.html')
@@ -1819,16 +1822,6 @@ def export_user_pdf():
     response.headers['Content-Type'] = 'application/pdf'
     return response
 
-@socketio.on("connect")
-def connect(auth):
-    room = session.get("room")
-    name = session.get("name")
-    if not room or not name:
-        return
-    join_room(room)
-    send({"name": name, "message": "has entered the room"}, to=room)
-    print(f"{name} joined room {room}")
-
 
 @app.route('/dashboard_user/print')
 @login_is_required
@@ -1837,177 +1830,6 @@ def print_user():
     users = cursor.fetchall()
     return render_template('admin/print_user.html', users=users)
 
-@app.route("/chat_user/", methods=["POST", "GET"])
-def home():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    cursor.execute("SELECT username, role_id FROM users WHERE id = %s", (session['user_id'],))
-    user = cursor.fetchone()
-
-    if not user:
-        session.clear()
-        return redirect(url_for("login"))
-
-    username = user['username']
-    role_id = user['role_id']
-
-    if request.method == "POST":
-        # Gunakan username sebagai nama room
-        room = username
-
-        # Periksa apakah room sudah ada di database
-        cursor.execute("SELECT * FROM rooms WHERE room_name = %s", (room,))
-        room_data = cursor.fetchone()
-
-        if not room_data:
-            cursor.execute("INSERT INTO rooms (room_name, members_count) VALUES (%s, %s)", (room, 0))
-            db.commit()
-
-        session["room"] = room
-        session["name"] = username
-        return redirect(url_for("room"))
-
-    return render_template("user/home.html", name=username, role_id=role_id)
-
-
-@app.route("/room")
-def room():
-    room = session.get("room")
-    if room is None or session.get("name") is None:
-        return redirect(url_for("home"))
-
-    cursor.execute("SELECT sender_name, message, created_at FROM messages WHERE room_name = %s ORDER BY created_at ASC", (room,))
-    messages = cursor.fetchall()
-
-    return render_template("user/room2.html", code=room, messages=messages)
-
-@socketio.on("message")
-def handle_message(data):
-    message_data = {
-        "name": session.get("name"),  # Ambil nama dari session
-        "message": data["data"],      # Pesan dari client
-        "created_at": datetime.now().isoformat()  # Timestamp pesan
-    }
-    send(message_data, to=session.get("room"))  # Kirim pesan ke room tertentu
-
-
-@socketio.on("connect")
-def connect(auth):
-    room = session.get("room")
-    name = session.get("name")
-    if not room or not name:
-        return
-    join_room(room)
-    send({"name": name, "message": "has entered the room"}, to=room)
-    print(f"{name} joined room {room}")
-
-@socketio.on("disconnect")
-def disconnect():
-    room = session.get("room")
-    name = session.get("name")
-    leave_room(room)
-
-    if room:
-        cursor.execute("UPDATE rooms SET members_count = members_count - 1 WHERE room_name = %s", (room,))
-        db.commit()
-
-        send({"name": name, "message": "has left the room"}, to=room)
-        print(f"{name} has left the room {room}")
-
-@app.route("/dashboard_chat/", methods=["POST", "GET"])
-def dashboard_chat():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    cursor.execute("SELECT username, role_id FROM users WHERE id = %s", (session['user_id'],))
-    user = cursor.fetchone()
-
-    if not user:
-        session.clear()
-        return redirect(url_for("login"))
-
-    username = user['username']
-    role_id = user['role_id']
-
-    # Fetch available room names from the database
-    cursor.execute("SELECT room_name FROM rooms")
-    rooms = cursor.fetchall()
-
-    if request.method == "POST":
-        room_code = request.form.get("code")  # Form field for room code
-
-        if room_code:
-            cursor.execute("SELECT * FROM rooms WHERE room_name = %s", (room_code,))
-            room_data = cursor.fetchone()
-
-            if room_data:
-                # Jika room ditemukan, set session room dan username
-                session["room"] = room_code
-                session["name"] = username
-                return redirect(url_for("room_admin"))
-            else:
-                return render_template("admin/home.html", name=username, role_id=role_id, error="Room not found", rooms=rooms)
-
-    return render_template("admin/home.html", name=username, role_id=role_id, rooms=rooms)
-
-@app.route("/room_admin")
-def room_admin():
-    room = session.get("room")
-    name = session.get("name")
-    if room is None or name is None:
-        return redirect(url_for("home"))
-
-    print(f"User {name} joined room {room}")  # Debugging line
-
-    cursor.execute("SELECT sender_name, message, created_at FROM messages WHERE room_name = %s ORDER BY created_at ASC", (room,))
-    messages = cursor.fetchall()
-
-    return render_template("admin/room.html", code=room, messages=messages)
-
-
-@socketio.on("message")
-def message(data):
-    print("Received message:", data)  # Debug log
-    room = session.get("room")
-    if not room:
-        return
-
-    content = {
-        "name": session.get("name"),
-        "message": data["data"],
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-
-    cursor.execute("INSERT INTO messages (room_name, sender_name, message, created_at) VALUES (%s, %s, %s, %s)",
-                   (room, content["name"], content["message"], content["created_at"]))
-    db.commit()
-
-    socketio.emit("message", content, room=room)
-    print(f"{content['name']} said: {content['message']}")
-
-@socketio.on("connect")
-def connect(auth):
-    room = session.get("room")
-    name = session.get("name")
-    if not room or not name:
-        return
-    join_room(room)
-    send({"name": name, "message": "has entered the room"}, to=room)
-    print(f"{name} joined room {room}")
-
-@socketio.on("disconnect")
-def disconnect():
-    room = session.get("room")
-    name = session.get("name")
-    leave_room(room)
-
-    if room:
-        cursor.execute("UPDATE rooms SET members_count = members_count - 1 WHERE room_name = %s", (room,))
-        db.commit()
-
-        send({"name": name, "message": "has left the room"}, to=room)
-        print(f"{name} has left the room {room}")
 
 @app.route("/logout/")
 def logout():
