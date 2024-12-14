@@ -56,10 +56,8 @@
                                     <table class="table card-table table-vcenter text-nowrap datatable">
                                         <thead>
                                             <tr>
-                                                <th>No. </th>
                                                 <th>Gambar</th>
                                                 <th>Nama Barang</th>
-                                                <th>Deskripsi</th>
                                                 <th>Kategori</th>
                                                 <th>Harga</th>
                                                 <th>Stok</th>
@@ -69,14 +67,12 @@
                                         <tbody id="barang-table">
                                             {% for b in barang %}
                                             <tr>
-                                                <td>{{ b.product_id }}</td>
                                                 <td>
                                                     <img src="{{ url_for('static', filename='uploads/profile_pics/' ~ b.gambar_produk) }}"
                                                         alt="Profile Pic" class="mt-2"
                                                         style="width: 100px; height: 100px;">
                                                 </td>
                                                 <td>{{ b.nama_produk }}</td>
-                                                <td>{{ b.teks_deskripsi }}</td>
                                                 <td>{{ b.nama_kategori }}</td>
                                                 <td>{{ b['harga'] | rupiah }}</td>
                                                 <td>{{ b.stok }}</td>
