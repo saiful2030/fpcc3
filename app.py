@@ -1101,6 +1101,14 @@ def tambah_barang():
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
+
+            # Upload file ke GitHub
+            github_response = upload_to_github(filepath, filename)
+            if github_response.status_code == 201:
+                flash('Gambar berhasil diunggah ke GitHub.', 'success')
+            else:
+                flash('Gagal mengunggah gambar ke GitHub.', 'danger')
+                return redirect(url_for('tambah_barang'))
         else:
             flash('Format file tidak valid. Hanya PNG, JPG, dan JPEG diperbolehkan.', 'danger')
             return redirect(url_for('tambah_barang'))
@@ -1158,7 +1166,6 @@ def edit_barang(product_id):
     kategori = cursor.fetchall()
 
     return render_template('admin/edit_barang.html', barang=barang, kategori=kategori)
-
 
 @app.route('/hapus_barang/<int:barang_id>', methods=['POST'])
 @login_is_required
@@ -1261,7 +1268,6 @@ def dashboard_user():
 def tambah_user_admin_page():
     return render_template('admin/tambah_admin.html')
 
-
 @app.route('/tambah_user_admin/', methods=['GET', 'POST'])
 @login_is_required
 def tambah_user_admin():
@@ -1291,6 +1297,14 @@ def tambah_user_admin():
             unique_filename = f"{timestamp}_{original_filename}"  # Gabungkan timestamp dengan nama file asli
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
             file.save(filepath)
+
+            # Upload file ke GitHub
+            github_response = upload_to_github(filepath, unique_filename)
+            if github_response.status_code == 201:
+                flash('Foto profil berhasil diunggah ke GitHub.', 'success')
+            else:
+                flash('Gagal mengunggah foto profil ke GitHub.', 'danger')
+                return redirect(url_for('tambah_user_admin'))
         else:
             flash('Invalid file type. Only PNG, JPG, and JPEG are allowed.', 'danger')
             return redirect(url_for('tambah_user_admin'))
@@ -1350,10 +1364,6 @@ def hapus_user_admin(user_id):
         flash(f"Error deleting user: {e}", "danger")
 
     return redirect(url_for('dashboard_user'))
-
-
-
-
 
 @app.route('/edit_user_admin/<int:user_id>', methods=['GET', 'POST'])
 @login_is_required
