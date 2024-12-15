@@ -43,6 +43,12 @@ def format_rupiah(value):
     except (ValueError, TypeError):
         return value
 
+# Konfigurasi folder upload lokal
+app.config['UPLOAD_FOLDER'] = 'static/uploads/profile_pics'
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+UPLOAD_FOLDER = 'static/profile_pics'  # Folder tempat menyimpan foto
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Ekstensi file yang diperbolehkan
 
 # Konfigurasi GitHub
 GITHUB_TOKEN = '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'
