@@ -50,32 +50,42 @@ REPO_OWNER = 'saiful2030'
 REPO_NAME = 'fpcc3'
 FILE_PATH = 'static/uploads/profile_pics'
 
+# Ekstensi file yang diperbolehkan
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Fungsi untuk memvalidasi ekstensi file
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 # Fungsi untuk mengunggah file ke GitHub
-def upload_to_github(file, file_name):
+def upload_to_github(file_path, file_name):
     url = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE_PATH}/{file_name}'
 
-    # Membaca konten file dan encoding ke Base64
-    content = file.read()
-    encoded_content = base64.b64encode(content).decode('utf-8')
+    try:
+        # Membaca konten file secara langsung dari request atau sumber lainnya
+        with open(file_path, 'rb') as file:
+            content = file.read()
+            encoded_content = base64.b64encode(content).decode('utf-8')
 
-    data = {
-        'message': f'Upload {file_name}',
-        'content': encoded_content,
-    }
+        data = {
+            'message': f'Upload {file_name}',
+            'content': encoded_content,
+        }
 
-    headers = {
-        'Authorization': f'token {GITHUB_TOKEN}',
-    }
+        headers = {
+            'Authorization': f'token {GITHUB_TOKEN}',
+        }
 
-    response = requests.put(url, json=data, headers=headers)
-    return response
-
-# Fungsi untuk memeriksa dan memvalidasi format file yang diunggah
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
-
-UPLOAD_FOLDER = upload_to_github  # Folder tempat menyimpan foto
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Ekstensi file yang diperbolehkan
+        # Mengunggah file ke GitHub
+        response = requests.put(url, json=data, headers=headers)
+        response.raise_for_status()  # Menangani error jika terjadi
+        return response.json()  # Mengembalikan response dalam format JSON
+    except requests.exceptions.RequestException as e:
+        print(f"Error during GitHub upload: {e}")
+        return None
+    except Exception as e:
+        print(f"Terjadi kesalahan lain: {e}")
+        return None
 
 db_config = {
     'host': '202.10.36.201',
@@ -206,14 +216,20 @@ def register():
         if 'profile_pic' in request.files:
             file = request.files['profile_pic']
             if file and allowed_file(file.filename):
-                # Buat nama file unik dengan timestamp
-                filename = f"{int(time.time())}_{secure_filename(file.filename)}"
-                response = upload_to_github(file, filename)
-
-                if response.status_code == 201:
-                    profile_pic = response.json().get('content', {}).get('html_url', '')
+                # Membuat nama file yang aman
+                filename = secure_filename(file.filename)
+                # Pastikan nama file unik
+                filename = str(int(time.time())) + '_' + filename
+                
+                # Simpan file ke GitHub
+                file.save(f'./tmp/{filename}')  # Simpan sementara di folder tmp sebelum upload ke GitHub
+                response = upload_to_github(f'./tmp/{filename}', filename)
+                
+                # Jika upload ke GitHub berhasil, lanjutkan proses
+                if response and response.get('content'):
+                    profile_pic = filename  # Menggunakan nama file yang diupload ke GitHub
                 else:
-                    flash('Gagal mengunggah foto profil ke GitHub.', 'danger')
+                    flash('File upload ke GitHub gagal', 'danger')
                     return redirect(url_for('register'))
 
         # Mendapatkan ID role
@@ -1089,8 +1105,17 @@ def tambah_barang():
         file = request.files['gambar_produk']
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+            
+            # Simpan file ke GitHub
+            file.save(f'./tmp/{filename}')  # Simpan sementara di folder tmp sebelum upload ke GitHub
+            response = upload_to_github(f'./tmp/{filename}', filename)
+            
+            # Jika upload ke GitHub berhasil, lanjutkan proses
+            if response and response.get('content'):
+                gambar_produk = filename
+            else:
+                flash('File upload ke GitHub gagal', 'danger')
+                return redirect(url_for('tambah_barang'))
         else:
             flash('Format file tidak valid. Hanya PNG, JPG, dan JPEG diperbolehkan.', 'danger')
             return redirect(url_for('tambah_barang'))
@@ -1099,7 +1124,7 @@ def tambah_barang():
         cursor.execute(
             "INSERT INTO dashboard (nama_produk, teks_deskripsi, harga, kategori_id, stok, gambar_produk) "
             "VALUES (%s, %s, %s, %s, %s, %s)",
-            (nama_produk, deskripsi, harga, kategori_id, stok, filename)
+            (nama_produk, deskripsi, harga, kategori_id, stok, gambar_produk)
         )
         db.commit()
         flash('Produk berhasil ditambahkan!', 'success')
@@ -1277,8 +1302,18 @@ def tambah_user_admin():
             # Tambahkan timestamp untuk membuat nama file unik
             timestamp = str(int(time.time()))  # Gunakan timestamp saat ini
             unique_filename = f"{timestamp}_{original_filename}"  # Gabungkan timestamp dengan nama file asli
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            file.save(filepath)
+            
+            # Simpan file ke GitHub
+            file.save(f'./tmp/{unique_filename}')  # Simpan sementara di folder tmp sebelum upload ke GitHub
+            response = upload_to_github(f'./tmp/{unique_filename}', unique_filename)
+            
+            # Jika upload ke GitHub berhasil, lanjutkan proses
+            if response and response.get('content'):
+                profile_pic = unique_filename  # Menggunakan nama file yang diupload ke GitHub
+            else:
+                flash('File upload ke GitHub gagal', 'danger')
+                return redirect(url_for('tambah_user_admin'))
+
         else:
             flash('Invalid file type. Only PNG, JPG, and JPEG are allowed.', 'danger')
             return redirect(url_for('tambah_user_admin'))
@@ -1296,7 +1331,7 @@ def tambah_user_admin():
         # Simpan data user
         cursor.execute(
             "INSERT INTO users (username, email, password, role_id, profile_pic, alamat, nomer_hp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (username, email, password, role_id, unique_filename, alamat, nomer)
+            (username, email, password, role_id, profile_pic, alamat, nomer)
         )
 
         db.commit()
