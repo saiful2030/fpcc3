@@ -1080,26 +1080,24 @@ def tambah_barang():
         stok = request.form['stok']
 
         # Cek file upload
-        file = request.files.get('gambar_produk')
-        if not file or not allowed_file(file.filename):
-            flash('Gambar produk wajib diunggah dengan format PNG, JPG, atau JPEG.', 'danger')
+        if 'gambar_produk' not in request.files or request.files['gambar_produk'].filename == '':
+            flash('Gambar produk wajib diunggah.', 'danger')
             return redirect(url_for('tambah_barang'))
 
-        # Buat nama file unik dengan timestamp
-        filename = f"{int(time.time())}_{secure_filename(file.filename)}"
-        response = upload_to_github(file, filename)
-
-        if response.status_code == 201:
-            github_url = response.json().get('content', {}).get('html_url', '')
+        file = request.files['gambar_produk']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
         else:
-            flash('Gagal mengunggah gambar ke GitHub.', 'danger')
+            flash('Format file tidak valid. Hanya PNG, JPG, dan JPEG diperbolehkan.', 'danger')
             return redirect(url_for('tambah_barang'))
 
         # Simpan data produk ke database
         cursor.execute(
             "INSERT INTO dashboard (nama_produk, teks_deskripsi, harga, kategori_id, stok, gambar_produk) "
             "VALUES (%s, %s, %s, %s, %s, %s)",
-            (nama_produk, deskripsi, harga, kategori_id, stok, github_url)
+            (nama_produk, deskripsi, harga, kategori_id, stok, filename)
         )
         db.commit()
         flash('Produk berhasil ditambahkan!', 'success')
