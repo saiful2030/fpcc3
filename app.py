@@ -204,12 +204,15 @@ def register():
         if 'profile_pic' in request.files:
             file = request.files['profile_pic']
             if file and allowed_file(file.filename):
-                # Membuat nama file yang aman
-                filename = secure_filename(file.filename)
-                # Pastikan nama file unik
-                filename = str(int(time.time())) + '_' + filename
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
-                profile_pic = filename  # Menyimpan nama file gambar
+                # Buat nama file unik dengan timestamp
+                filename = f"{int(time.time())}_{secure_filename(file.filename)}"
+                response = upload_to_github(file, filename)
+
+                if response.status_code == 201:
+                    profile_pic = response.json().get('content', {}).get('html_url', '')
+                else:
+                    flash('Gagal mengunggah foto profil ke GitHub.', 'danger')
+                    return redirect(url_for('register'))
 
         # Mendapatkan ID role
         cursor.execute("SELECT id FROM roles WHERE role_name = %s LIMIT 1", (role,))
@@ -229,7 +232,6 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html')
-
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
@@ -1078,32 +1080,26 @@ def tambah_barang():
         stok = request.form['stok']
 
         # Cek file upload
-        if 'gambar_produk' not in request.files or request.files['gambar_produk'].filename == '':
-            flash('Gambar produk wajib diunggah.', 'danger')
+        file = request.files.get('gambar_produk')
+        if not file or not allowed_file(file.filename):
+            flash('Gambar produk wajib diunggah dengan format PNG, JPG, atau JPEG.', 'danger')
             return redirect(url_for('tambah_barang'))
 
-        file = request.files['gambar_produk']
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+        # Buat nama file unik dengan timestamp
+        filename = f"{int(time.time())}_{secure_filename(file.filename)}"
+        response = upload_to_github(file, filename)
 
-            # Upload file ke GitHub
-            github_response = upload_to_github(filepath, filename)
-            if github_response.status_code == 201:
-                flash('Gambar berhasil diunggah ke GitHub.', 'success')
-            else:
-                flash('Gagal mengunggah gambar ke GitHub.', 'danger')
-                return redirect(url_for('tambah_barang'))
+        if response.status_code == 201:
+            github_url = response.json().get('content', {}).get('html_url', '')
         else:
-            flash('Format file tidak valid. Hanya PNG, JPG, dan JPEG diperbolehkan.', 'danger')
+            flash('Gagal mengunggah gambar ke GitHub.', 'danger')
             return redirect(url_for('tambah_barang'))
 
         # Simpan data produk ke database
         cursor.execute(
             "INSERT INTO dashboard (nama_produk, teks_deskripsi, harga, kategori_id, stok, gambar_produk) "
             "VALUES (%s, %s, %s, %s, %s, %s)",
-            (nama_produk, deskripsi, harga, kategori_id, stok, filename)
+            (nama_produk, deskripsi, harga, kategori_id, stok, github_url)
         )
         db.commit()
         flash('Produk berhasil ditambahkan!', 'success')
