@@ -1256,31 +1256,25 @@ def tambah_user_admin():
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
-        alamat = request.form['alamat'] 
+        alamat = request.form['alamat']
         nomer = request.form['nomer']
         password = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
         role = "Penjual"
 
         # Cek file upload
-        if 'profile_pic' not in request.files:
-            flash('No file part', 'danger')
-            return redirect(url_for('tambah_user_admin'))
-        
-        file = request.files['profile_pic']
-
-        if file.filename == '':
-            flash('No selected file', 'danger')
+        file = request.files.get('profile_pic')
+        if not file or not allowed_file(file.filename):
+            flash('Foto profil wajib diunggah dengan format PNG, JPG, atau JPEG.', 'danger')
             return redirect(url_for('tambah_user_admin'))
 
-        if file and allowed_file(file.filename):
-            original_filename = secure_filename(file.filename)
-            # Tambahkan timestamp untuk membuat nama file unik
-            timestamp = str(int(time.time()))  # Gunakan timestamp saat ini
-            unique_filename = f"{timestamp}_{original_filename}"  # Gabungkan timestamp dengan nama file asli
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            file.save(filepath)
+        # Buat nama file unik dengan timestamp
+        filename = f"{int(time.time())}_{secure_filename(file.filename)}"
+        response = upload_to_github(file, filename)
+
+        if response.status_code == 201:
+            github_url = response.json().get('content', {}).get('html_url', '')
         else:
-            flash('Invalid file type. Only PNG, JPG, and JPEG are allowed.', 'danger')
+            flash('Gagal mengunggah foto profil ke GitHub.', 'danger')
             return redirect(url_for('tambah_user_admin'))
 
         # Cek role di database
@@ -1290,17 +1284,16 @@ def tambah_user_admin():
         if role_data:
             role_id = role_data['id']
         else:
-            flash('Role not found!', 'danger')
-            return redirect(url_for('register'))
+            flash('Role tidak ditemukan!', 'danger')
+            return redirect(url_for('tambah_user_admin'))
 
-        # Simpan data user
+        # Simpan data user ke database
         cursor.execute(
             "INSERT INTO users (username, email, password, role_id, profile_pic, alamat, nomer_hp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (username, email, password, role_id, unique_filename, alamat, nomer)
+            (username, email, password, role_id, github_url, alamat, nomer)
         )
-
         db.commit()
-        flash('Registration successful! Please log in.', 'success')
+        flash('User berhasil ditambahkan!', 'success')
         return redirect(url_for('dashboard_user'))
 
     return render_template('admin/user.html')
