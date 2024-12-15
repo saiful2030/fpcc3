@@ -1297,14 +1297,6 @@ def tambah_user_admin():
             unique_filename = f"{timestamp}_{original_filename}"  # Gabungkan timestamp dengan nama file asli
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
             file.save(filepath)
-
-            # Upload file ke GitHub
-            github_response = upload_to_github(filepath, unique_filename)
-            if github_response.status_code == 201:
-                flash('Foto profil berhasil diunggah ke GitHub.', 'success')
-            else:
-                flash('Gagal mengunggah foto profil ke GitHub.', 'danger')
-                return redirect(url_for('tambah_user_admin'))
         else:
             flash('Invalid file type. Only PNG, JPG, and JPEG are allowed.', 'danger')
             return redirect(url_for('tambah_user_admin'))
