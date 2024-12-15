@@ -74,6 +74,8 @@ def upload_to_github(file, file_name):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
 
+UPLOAD_FOLDER = upload_to_github  # Folder tempat menyimpan foto
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Ekstensi file yang diperbolehkan
 
 db_config = {
     'host': '202.10.36.201',
