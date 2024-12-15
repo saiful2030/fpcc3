@@ -1160,25 +1160,10 @@ def edit_barang(product_id):
 @app.route('/hapus_barang/<int:barang_id>', methods=['POST'])
 @login_is_required
 def hapus_barang(barang_id):
-    try:
-        cursor.execute("SELECT * FROM dashboard WHERE product_id = %s", (barang_id,))
-        result = cursor.fetchone()
-
-        if result:
-            cursor.execute("DELETE FROM dashboard WHERE product_id = %s", (barang_id,))
-            db.commit()
-            flash("Barang berhasil dihapus!", "success")
-        else:
-            flash("Barang tidak ditemukan!", "danger")
-    
-    except Exception as e:
-        db.rollback()  # Undo any changes if there's an error
-        flash(f"Terjadi kesalahan: {str(e)}", "danger")
-    
+    cursor.execute("DELETE FROM dashboard WHERE product_id = %s", (barang_id,))
+    db.commit()
+    flash("Barang berhasil dihapus!", "success")
     return redirect(url_for('dashboard_barang'))
-
-
-
 
 @app.route('/dashboard_kategori/')
 @login_is_required
